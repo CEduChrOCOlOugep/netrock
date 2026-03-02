@@ -49,12 +49,19 @@ public sealed class ExternalAuthOptions : IValidatableObject
                 [nameof(StateLifetime)]);
         }
 
+        // Blocklist rather than allowlist so custom mobile schemes (e.g. myapp://oauth/callback) are permitted.
         foreach (var uri in AllowedRedirectUris)
         {
-            if (!Uri.TryCreate(uri, UriKind.Absolute, out _))
+            if (!Uri.TryCreate(uri, UriKind.Absolute, out var parsed))
             {
                 yield return new ValidationResult(
                     $"AllowedRedirectUris contains an invalid URI: '{uri}'.",
+                    [nameof(AllowedRedirectUris)]);
+            }
+            else if (parsed.Scheme is "javascript" or "data" or "file" or "blob" or "vbscript")
+            {
+                yield return new ValidationResult(
+                    $"AllowedRedirectUris contains a URI with a dangerous scheme '{parsed.Scheme}': '{uri}'.",
                     [nameof(AllowedRedirectUris)]);
             }
         }
