@@ -1,6 +1,6 @@
 # Agent Guidelines
 
-> Hard rules and verification commands are in [`CLAUDE.md`](CLAUDE.md) — always loaded.
+> Hard rules and verification commands are in [`CLAUDE.md`](CLAUDE.md) - always loaded.
 
 ## Architecture
 
@@ -20,14 +20,14 @@ Backend API (.NET :8080)
 |---|---|---|
 | **Framework** | .NET 10 / C# 13 | SvelteKit / Svelte 5 (Runes) |
 | **Data** | PostgreSQL + EF Core | openapi-typescript (generated types) |
-| **Cache** | HybridCache (in-process L1) | — |
+| **Cache** | HybridCache (in-process L1) | - |
 | **Auth** | JWT in HttpOnly cookies + permission claims | Cookie-based (automatic via proxy) |
 | **Authorization** | `[RequirePermission]` + role hierarchy | `hasPermission()` utilities |
 | **Validation** | FluentValidation + Data Annotations | TypeScript strict mode |
-| **Styling** | — | Tailwind CSS 4 + shadcn-svelte |
-| **i18n** | — | paraglide-js (compile-time) |
+| **Styling** | - | Tailwind CSS 4 + shadcn-svelte |
+| **i18n** | - | paraglide-js (compile-time) |
 
-### Backend — Clean Architecture
+### Backend - Clean Architecture
 
 ```
 WebApi → Application ← Infrastructure
@@ -47,10 +47,10 @@ All layers reference Shared (Result, ErrorType, ErrorMessages)
 
 ## Code Quality
 
-- Public methods read like a table of contents — delegate to well-named private methods.
+- Public methods read like a table of contents - delegate to well-named private methods.
 - Extract duplication only when intent is identical and a change to one copy always means the same change to others.
 - Design for testability: small focused methods, constructor injection, pure logic where possible.
-- Don't wrap framework types just to mock them — use integration tests instead.
+- Don't wrap framework types just to mock them - use integration tests instead.
 
 ## Security
 
@@ -58,7 +58,7 @@ All layers reference Shared (Result, ErrorType, ErrorMessages)
 
 | Principle | Practice |
 |---|---|
-| Restrictive by default | Deny access, block origins, strip headers — open selectively |
+| Restrictive by default | Deny access, block origins, strip headers - open selectively |
 | Defense in depth | Validate frontend AND backend. Auth in middleware AND controllers. |
 | Least privilege | Minimum data and permissions in tokens, cookies, responses |
 | Fail closed | If validation/token/origin check fails → reject. Never fall through. |
@@ -66,11 +66,13 @@ All layers reference Shared (Result, ErrorType, ErrorMessages)
 
 When building features: think about abuse first, validate all input on backend, sanitize output, protect mutations with auth + CSRF, log security events, audit significant actions via `IAuditService.LogAsync`.
 
+**PII compliance is non-negotiable.** Never expose emails, phone numbers, or usernames to callers without `users.view_pii` permission. PII masking happens server-side via `PiiMasker` / `WithMaskedPii` - never rely on frontend hiding. Never log PII in plain text (use structured logging with masking). Never include PII in URLs, tokens, or error messages. Self-view exemption: users always see their own unmasked data.
+
 ## Git Workflow
 
-**Commit continuously and atomically.** Every logically complete unit of work gets its own commit immediately — don't batch up changes.
+**Commit continuously and atomically.** Every logically complete unit of work gets its own commit immediately - don't batch up changes.
 
-Format: `type(scope): lowercase imperative description` — max 72 chars, no period.
+Format: `type(scope): lowercase imperative description` - max 72 chars, no period.
 
 ```
 feat(auth): add refresh token rotation
@@ -80,7 +82,9 @@ test(auth): add login integration tests
 
 One commit = one logical change that could be reverted independently.
 
-**Avoid committing broken code.** Run verification before each commit. If it fails, fix and re-run — keep the main branch green.
+**Avoid committing broken code.** Run verification before each commit. If it fails, fix and re-run - keep the main branch green.
+
+**Split large features into stacked PRs.** If a feature touches many files or layers, break it into reviewable chunks (e.g., backend models, then API endpoints, then frontend). Each PR targets the previous PR's branch via `--base`. This keeps reviews focused and mergeable. See `/create-pr` for the mechanics.
 
 ### Labels (Issues & PRs)
 
@@ -106,6 +110,37 @@ One commit = one logical change that could be reverted independently.
 
 Error messages flow: Backend `ErrorMessages.*` → `Result.Failure()` → `ProblemFactory.Create()` → `ProblemDetails.detail` → Frontend `getErrorMessage()`.
 
+## Breaking Changes
+
+The backend API is public-facing and may serve unknown consumers beyond the included SvelteKit frontend. Treat every API contract change with the same care as a published library. When modifying existing code (not creating new), follow these rules.
+
+### What Counts as a Breaking Change
+
+| Layer | Breaking change |
+|---|---|
+| **Domain entity** | Renaming/removing a property, changing a type |
+| **Application interface** | Changing a method signature, renaming/removing a method |
+| **Application DTO** | Renaming/removing a field, changing nullability |
+| **WebApi endpoint** | Changing route, method, request/response shape, status codes |
+| **WebApi response DTO** | Renaming/removing a property, changing type or nullability |
+| **Frontend API types** | Always regenerated - broken by any backend DTO change |
+| **i18n keys** | Renaming a key (all usages break) |
+
+### Safe Strategies
+
+1. **Prefer additive changes** - add new fields/endpoints rather than removing or renaming
+2. **Same-PR migration** - if a breaking change is needed, update all consumers (including frontend types) in the same PR
+3. **V2 endpoint** - for significant changes, create `api/v2/{feature}/{action}` alongside v1
+4. **Deprecate then remove** - mark as obsolete in one PR, remove in a follow-up
+
+### Pre-Modification Checklist
+
+1. Check [FILEMAP.md](FILEMAP.md) for impact
+2. Search for all usages: `grep -r "InterfaceName\|MethodName" src/`
+3. If the change affects the OpenAPI spec - frontend types are affected - regenerate and fix
+4. If the change affects i18n keys - update all `.json` message files and all component usages
+5. Document the breaking change in the commit body
+
 ## Local Development
 
 ```bash
@@ -120,6 +155,6 @@ Behavioral config (log levels, rate limits, JWT lifetimes, CORS, seed users) liv
 |---|---|
 | `appsettings.json` | Base/production defaults (placeholder values) |
 | `appsettings.Development.json` | Dev overrides (generous JWT, debug logging, seed users, permissive rate limits) |
-| `deploy/envs/production-example/` | Production template — `cp -r` to `deploy/envs/production/` |
+| `deploy/envs/production-example/` | Production template - `cp -r` to `deploy/envs/production/` |
 | `deploy/docker-compose.yml` | Base service definitions (production only) |
 | `deploy/docker-compose.production.yml` | Production overlay |

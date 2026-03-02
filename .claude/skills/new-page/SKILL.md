@@ -1,6 +1,14 @@
-Create a new frontend page with routing, i18n, and navigation.
+---
+disable-model-invocation: true
+---
 
-Infer route, route group, components needed, and data requirements from context. Default to `(app)` (authenticated). Ask only if genuinely ambiguous.
+Creates a new frontend page with routing, i18n, and navigation.
+
+Infers route, route group, components needed, and data requirements from context. Defaults to `(app)` (authenticated). Asks only if genuinely ambiguous.
+
+## Conventions
+
+- **Button layout**: All action/submit buttons use `w-full sm:w-auto` with wrapper `flex flex-col gap-2 sm:flex-row sm:justify-end`. Default size only (no `size="sm"` or `size="lg"`).
 
 ## Steps
 
@@ -28,7 +36,7 @@ Infer route, route group, components needed, and data requirements from context.
 
 **Verify and commit:**
 
-10. `cd src/frontend && pnpm run format && pnpm run lint && pnpm run check` — fix errors, loop until green
+10. `cd src/frontend && pnpm run format && pnpm run lint && pnpm run check` - fix errors, loop until green
 11. Commit: `feat({feature}): add {feature} page`
 
-Paraglide module errors (~32) are expected at check time — ignore those. Fix everything else.
+Paraglide module errors (~32) are expected at check time - ignore those. Fix everything else.
